@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QUPAL — Frontend Mock</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="logo">
+            <!-- circle logo -->
+            <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+              <circle cx="26" cy="26" r="24" fill="#6fe6e6" />
+              <rect x="20" y="20" width="12" height="8" rx="2" fill="#ffffff" />
+              <circle cx="34" cy="14" r="4" fill="#ffffff" />
+            </svg>
+          </div>
+          <div class="brand">
+            <div class="brand-title">QUPAL</div>
+            <div class="brand-sub">Your Thrift Shopping Assistant</div>
+          </div>
+        </div>
+      </header>
+
+      <main class="chat-area">
+        <div class="card">
+          <div id="messages" class="messages">
+            <div class="message-row">
+              <div class="avatar avatar-assistant">Q</div>
+              <div class="bubble bubble-assistant">
+                Hello! I'm QUPAL, your thrift shopping AI assistant. I can help
+                you find amazing second-hand treasures, identify vintage items,
+                estimate values, and give tips on thrifting. What are you
+                looking for today?
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div class="input-bar">
+        <form id="input-form" class="input-form">
+          <input
+            id="message-input"
+            class="text-input"
+            placeholder="Type your message..."
+            autocomplete="off"
+          />
+          <button type="submit" class="send-btn" aria-label="Send">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M3 11L21 3L14 21L11 14L3 11Z" fill="white" />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Simple front-end message stacking + rule-based reply (mirrors Python rule set)
+      const messagesEl = document.getElementById("messages");
+      const form = document.getElementById("input-form");
+      const input = document.getElementById("message-input");
+
+      function appendMessage(text, sender = "assistant") {
+        const row = document.createElement("div");
+        row.className =
+          "message-row " + (sender === "assistant" ? "row-left" : "row-right");
+
+        if (sender === "assistant") {
+          const avatar = document.createElement("div");
+          avatar.className = "avatar avatar-assistant";
+          avatar.textContent = "Q";
+          row.appendChild(avatar);
+
+          const bubble = document.createElement("div");
+          bubble.className = "bubble bubble-assistant";
+          bubble.textContent = text;
+          row.appendChild(bubble);
+        } else {
+          const bubble = document.createElement("div");
+          bubble.className = "bubble bubble-user";
+          bubble.textContent = text;
+          row.appendChild(bubble);
+        }
+
+        messagesEl.appendChild(row);
+        // scroll to bottom
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function ruleBasedReply(text) {
+        const t = text.toLowerCase();
+        if (["hello", "hi", "hey"].some((x) => t.includes(x)))
+          return "Hi there! What kind of thrift item are you looking for?";
+        if (
+          t.includes("vintage") ||
+          t.includes("identify") ||
+          t.includes("what is this")
+        )
+          return "Tell me a bit about the item's markings, materials, and any labels — I can help identify it.";
+        if (
+          t.includes("value") ||
+          t.includes("estimate") ||
+          t.includes("worth")
+        )
+          return "I can give a rough estimate if you tell me the brand, condition, and approximate age.";
+        if (t.includes("tips") || t.includes("thrift"))
+          return "Look for solid construction, classic brands, and minimal staining — always inspect seams and zippers.";
+        if (t.includes("bye") || t.includes("thanks"))
+          return "You're welcome — happy thrifting!";
+        return "I don't have an exact answer for that, but I can help if you give more details.";
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (!v) return;
+        appendMessage(v, "user");
+        input.value = "";
+        // simulate thinking
+        setTimeout(() => {
+          appendMessage(ruleBasedReply(v), "assistant");
+        }, 600);
+      });
+
+      // Ensure messages container is scrolled to top/bottom appropriately on load
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      async function tryServerReply(text) {
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text }),
+          });
+          if (!res.ok) throw new Error("bad response");
+          const data = await res.json();
+          if (data && data.reply) return data.reply;
+        } catch (e) {
+          // server not available or error — fall back
+          console.warn("Server reply failed, falling back to rule-based:", e);
+        }
+        return null;
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (!v) return;
+        appendMessage(v, "user");
+        input.value = "";
+        // try server first, otherwise local rule-based reply
+        const serverReply = await tryServerReply(v);
+        if (serverReply) {
+          setTimeout(() => appendMessage(serverReply, "assistant"), 400);
+        } else {
+          setTimeout(() => appendMessage(ruleBasedReply(v), "assistant"), 400);
+        }
+      });
+    </script>
+  </body>
+</html>

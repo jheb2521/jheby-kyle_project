@@ -1,0 +1,9 @@
+# Requirements for optional server and OpenAI integration
+# - Flask: serves the frontend and exposes the /api/chat endpoint
+# - openai: optional, used by the server when OPENAI_API_KEY is set
+
+flask
+openai
+
+# The Tkinter app (`main.py`) still runs without these packages; these are only
+# needed if you run `server.py` to enable secure OpenAI calls from the frontend.
