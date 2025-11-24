@@ -177,3 +177,42 @@ html {
 .choice-btn:hover {
   background: #d7f4f4;
 }
+
+/* Model info card shown for selected laptop */
+.model-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(180deg, #ffffff, #f7ffff);
+  border-radius: 12px;
+  padding: 12px;
+  margin-left: 56px;
+  max-width: 78%;
+  box-shadow: 0 6px 18px rgba(98, 160, 160, 0.06);
+}
+.model-card-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8fbfb, #d7f4f4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0fa7a7;
+  font-weight: 700;
+  flex: 0 0 72px;
+}
+.model-card-body {
+  display: flex;
+  flex-direction: column;
+}
+.model-card-title {
+  font-weight: 700;
+  color: #0f7171;
+  margin-bottom: 6px;
+}
+.model-card-details {
+  font-size: 13px;
+  color: #3f4b4b;
+  line-height: 1.3;
+}

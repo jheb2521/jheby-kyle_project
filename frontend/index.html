@@ -97,6 +97,40 @@
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
 
+      function appendModelCard(modelName, details) {
+        const row = document.createElement("div");
+        row.className = "message-row row-left";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar avatar-assistant";
+        avatar.textContent = "Q";
+        row.appendChild(avatar);
+
+        const card = document.createElement("div");
+        card.className = "model-card";
+
+        const img = document.createElement("div");
+        img.className = "model-card-img";
+        img.textContent = modelName.split(" ")[0];
+        card.appendChild(img);
+
+        const body = document.createElement("div");
+        body.className = "model-card-body";
+        const title = document.createElement("div");
+        title.className = "model-card-title";
+        title.textContent = modelName;
+        const detailsEl = document.createElement("div");
+        detailsEl.className = "model-card-details";
+        detailsEl.textContent = details;
+        body.appendChild(title);
+        body.appendChild(detailsEl);
+        card.appendChild(body);
+
+        row.appendChild(card);
+        messagesEl.appendChild(row);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
       // Ensure messages container is scrolled to top/bottom appropriately on load
       messagesEl.scrollTop = messagesEl.scrollHeight;
 
@@ -130,10 +164,33 @@
         const res = await tryServerReply(v);
         if (res.ok) {
           const data = res.data;
-          setTimeout(
-            () => appendMessage(data.reply || "...", "assistant"),
-            300
-          );
+          // detect if the user's message names a specific model
+          const modelNames = [
+            "MacBook Air",
+            "Dell XPS 13",
+            "Lenovo ThinkPad X1 Carbon",
+            "HP Spectre x360",
+          ];
+          const findModelInText = (text) => {
+            const low = (text || "").toLowerCase();
+            return modelNames.find((m) => low.includes(m.toLowerCase()));
+          };
+
+          const maybeModelFromUser = findModelInText(v);
+
+          // If server returned a plain reply but user asked about a model, render a model card
+          if (maybeModelFromUser && data.reply) {
+            setTimeout(
+              () => appendModelCard(maybeModelFromUser, data.reply),
+              250
+            );
+          } else {
+            setTimeout(
+              () => appendMessage(data.reply || "...", "assistant"),
+              300
+            );
+          }
+
           if (data.choices && Array.isArray(data.choices)) {
             // render choice buttons under the assistant message
             const container = document.createElement("div");
@@ -150,9 +207,10 @@
                   selection: choice,
                 });
                 if (sel.ok) {
-                  appendMessage(
-                    sel.data.reply || "No details available.",
-                    "assistant"
+                  // render a rich model card using the selection and reply
+                  appendModelCard(
+                    choice,
+                    sel.data.reply || "No details available."
                   );
                 } else {
                   appendMessage(
