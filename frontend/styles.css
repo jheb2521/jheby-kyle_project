@@ -159,3 +159,21 @@ html {
     max-width: 84%;
   }
 }
+
+/* Choice buttons when server provides options */
+.choice-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 20px 56px;
+}
+.choice-btn {
+  background: #e8fafa;
+  border: 1px solid #cfeff0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.choice-btn:hover {
+  background: #d7f4f4;
+}

@@ -97,58 +97,27 @@
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
 
-      function ruleBasedReply(text) {
-        const t = text.toLowerCase();
-        if (["hello", "hi", "hey"].some((x) => t.includes(x)))
-          return "Hi there! What kind of thrift item are you looking for?";
-        if (
-          t.includes("vintage") ||
-          t.includes("identify") ||
-          t.includes("what is this")
-        )
-          return "Tell me a bit about the item's markings, materials, and any labels — I can help identify it.";
-        if (
-          t.includes("value") ||
-          t.includes("estimate") ||
-          t.includes("worth")
-        )
-          return "I can give a rough estimate if you tell me the brand, condition, and approximate age.";
-        if (t.includes("tips") || t.includes("thrift"))
-          return "Look for solid construction, classic brands, and minimal staining — always inspect seams and zippers.";
-        if (t.includes("bye") || t.includes("thanks"))
-          return "You're welcome — happy thrifting!";
-        return "I don't have an exact answer for that, but I can help if you give more details.";
-      }
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const v = input.value.trim();
-        if (!v) return;
-        appendMessage(v, "user");
-        input.value = "";
-        // simulate thinking
-        setTimeout(() => {
-          appendMessage(ruleBasedReply(v), "assistant");
-        }, 600);
-      });
-
       // Ensure messages container is scrolled to top/bottom appropriately on load
       messagesEl.scrollTop = messagesEl.scrollHeight;
-      async function tryServerReply(text) {
+
+      async function tryServerReply(text, extra = {}) {
         try {
+          const body = Object.assign({ message: text }, extra);
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text }),
+            body: JSON.stringify(body),
           });
-          if (!res.ok) throw new Error("bad response");
           const data = await res.json();
-          if (data && data.reply) return data.reply;
+          if (res.ok && data) return { ok: true, data };
+          return {
+            ok: false,
+            error: data && data.error ? data.error : "Server error",
+          };
         } catch (e) {
-          // server not available or error — fall back
-          console.warn("Server reply failed, falling back to rule-based:", e);
+          console.warn("Server request failed:", e);
+          return { ok: false, error: "Network or server error" };
         }
-        return null;
       }
 
       form.addEventListener("submit", async (e) => {
@@ -157,12 +126,56 @@
         if (!v) return;
         appendMessage(v, "user");
         input.value = "";
-        // try server first, otherwise local rule-based reply
-        const serverReply = await tryServerReply(v);
-        if (serverReply) {
-          setTimeout(() => appendMessage(serverReply, "assistant"), 400);
+        // Request must come from the server
+        const res = await tryServerReply(v);
+        if (res.ok) {
+          const data = res.data;
+          setTimeout(
+            () => appendMessage(data.reply || "...", "assistant"),
+            300
+          );
+          if (data.choices && Array.isArray(data.choices)) {
+            // render choice buttons under the assistant message
+            const container = document.createElement("div");
+            container.className = "choice-container";
+            data.choices.forEach((choice) => {
+              const btn = document.createElement("button");
+              btn.className = "choice-btn";
+              btn.textContent = choice;
+              btn.addEventListener("click", async () => {
+                appendMessage(choice, "user");
+                // send selection to server
+                const sel = await tryServerReply("", {
+                  action: "select",
+                  selection: choice,
+                });
+                if (sel.ok) {
+                  appendMessage(
+                    sel.data.reply || "No details available.",
+                    "assistant"
+                  );
+                } else {
+                  appendMessage(
+                    "Server error when fetching selection.",
+                    "assistant"
+                  );
+                }
+                container.remove();
+              });
+              container.appendChild(btn);
+            });
+            messagesEl.appendChild(container);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+          }
         } else {
-          setTimeout(() => appendMessage(ruleBasedReply(v), "assistant"), 400);
+          setTimeout(
+            () =>
+              appendMessage(
+                "Server unavailable or not configured. Set OPENAI_API_KEY on the server and restart.",
+                "assistant"
+              ),
+            300
+          );
         }
       });
     </script>

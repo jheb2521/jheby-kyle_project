@@ -61,3 +61,38 @@ Behavior notes:
 
 - The page includes a small JavaScript snippet that stacks messages (user and assistant) and simulates a quick rule-based reply.
 - This is a client-side mock (no backend). If you'd like I can wire it to the Python backend (`main.py`) or a real API.
+
+Admin runtime API key (optional)
+
+If you prefer not to set `OPENAI_API_KEY` as an environment variable, you can set the key at runtime using a localhost-only admin endpoint. This stores the key in the running process only (not in files) and requires an admin token.
+
+1. Choose an admin token and set it in PowerShell (only required once):
+
+```powershell
+[Environment]::SetEnvironmentVariable('ADMIN_TOKEN','my-secret-token','User')
+```
+
+2. Start the server (without pasting API keys into files or chat):
+
+```powershell
+cd "C:\Users\JHEB\Downloads\Grp5"
+python server.py
+```
+
+3. From the same machine, set the OpenAI key at runtime (replace values):
+
+```powershell
+# send the key to the running server (localhost only)
+curl -X POST http://127.0.0.1:5000/admin/set_key -H "Content-Type: application/json" -d '{"key":"sk-...","admin_token":"my-secret-token"}'
+```
+
+4. To clear the key from the running server process:
+
+```powershell
+curl -X POST http://127.0.0.1:5000/admin/clear_key -H "Content-Type: application/json" -d '{"admin_token":"my-secret-token"}'
+```
+
+Security notes:
+
+- The admin endpoints only accept requests from localhost and require the `ADMIN_TOKEN` (set in your user environment). This avoids embedding keys in code or sharing them in chat.
+- Never paste API keys in chat. Use the admin endpoint or environment variables on your machine.
